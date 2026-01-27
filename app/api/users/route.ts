@@ -5,8 +5,8 @@ import { User } from '@/lib/types';
 export async function GET() {
   try {
     await initDb();
-    const result = await sql<User>`SELECT id, name FROM users ORDER BY id;`;
-    return NextResponse.json(result.rows);
+    const users = await sql`SELECT id, name FROM users ORDER BY id` as User[];
+    return NextResponse.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });

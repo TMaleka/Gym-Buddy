@@ -9,22 +9,22 @@ export async function GET(request: NextRequest) {
   try {
     await initDb();
     if (userId) {
-      const result = await sql<WorkoutEntry>`
+      const workouts = await sql`
         SELECT id, user_id, week_start, day_of_week, workout_type, duration
         FROM workout_entries
         WHERE user_id = ${parseInt(userId)}
-        ORDER BY week_start DESC;
-      `;
+        ORDER BY week_start DESC
+      ` as WorkoutEntry[];
 
-      return NextResponse.json(result.rows);
+      return NextResponse.json(workouts);
     } else {
-      const result = await sql<WorkoutEntry>`
+      const workouts = await sql`
         SELECT id, user_id, week_start, day_of_week, workout_type, duration
         FROM workout_entries
-        ORDER BY week_start DESC;
-      `;
+        ORDER BY week_start DESC
+      ` as WorkoutEntry[];
 
-      return NextResponse.json(result.rows);
+      return NextResponse.json(workouts);
     }
   } catch (error) {
     console.error('Error fetching history:', error);

@@ -11,23 +11,23 @@ export async function GET(request: NextRequest) {
   try {
     await initDb();
     if (userId) {
-      const result = await sql<WorkoutEntry>`
+      const workouts = await sql`
         SELECT id, user_id, week_start, day_of_week, workout_type, duration
         FROM workout_entries
         WHERE user_id = ${parseInt(userId)} AND week_start = ${weekStart}
-        ORDER BY day_of_week;
-      `;
+        ORDER BY day_of_week
+      ` as WorkoutEntry[];
 
-      return NextResponse.json(result.rows);
+      return NextResponse.json(workouts);
     } else {
-      const result = await sql<WorkoutEntry>`
+      const workouts = await sql`
         SELECT id, user_id, week_start, day_of_week, workout_type, duration
         FROM workout_entries
         WHERE week_start = ${weekStart}
-        ORDER BY user_id, day_of_week;
-      `;
+        ORDER BY user_id, day_of_week
+      ` as WorkoutEntry[];
 
-      return NextResponse.json(result.rows);
+      return NextResponse.json(workouts);
     }
   } catch (error) {
     console.error('Error fetching workouts:', error);
@@ -47,17 +47,17 @@ export async function POST(request: NextRequest) {
       INSERT INTO workout_entries (user_id, week_start, day_of_week, workout_type, duration)
       VALUES (${userId}, ${week}, ${dayOfWeek}, ${workoutType}, ${duration})
       ON CONFLICT (user_id, week_start, day_of_week)
-      DO UPDATE SET workout_type = EXCLUDED.workout_type, duration = EXCLUDED.duration;
+      DO UPDATE SET workout_type = EXCLUDED.workout_type, duration = EXCLUDED.duration
     `;
 
-    const result = await sql<WorkoutEntry>`
+    const workouts = await sql`
       SELECT id, user_id, week_start, day_of_week, workout_type, duration
       FROM workout_entries
       WHERE user_id = ${userId} AND week_start = ${week}
-      ORDER BY day_of_week;
-    `;
+      ORDER BY day_of_week
+    ` as WorkoutEntry[];
 
-    return NextResponse.json(result.rows);
+    return NextResponse.json(workouts);
   } catch (error) {
     console.error('Error updating workout:', error);
     return NextResponse.json({ error: 'Failed to update workout' }, { status: 500 });
@@ -78,17 +78,17 @@ export async function DELETE(request: NextRequest) {
 
     await sql`
       DELETE FROM workout_entries
-      WHERE user_id = ${parseInt(userId)} AND week_start = ${weekStart} AND day_of_week = ${dayOfWeek};
+      WHERE user_id = ${parseInt(userId)} AND week_start = ${weekStart} AND day_of_week = ${dayOfWeek}
     `;
 
-    const result = await sql<WorkoutEntry>`
+    const workouts = await sql`
       SELECT id, user_id, week_start, day_of_week, workout_type, duration
       FROM workout_entries
       WHERE user_id = ${parseInt(userId)} AND week_start = ${weekStart}
-      ORDER BY day_of_week;
-    `;
+      ORDER BY day_of_week
+    ` as WorkoutEntry[];
 
-    return NextResponse.json(result.rows);
+    return NextResponse.json(workouts);
   } catch (error) {
     console.error('Error deleting workout:', error);
     return NextResponse.json({ error: 'Failed to delete workout' }, { status: 500 });
