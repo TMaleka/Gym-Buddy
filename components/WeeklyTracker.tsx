@@ -12,7 +12,7 @@ interface WeeklyTrackerProps {
   userId: number;
   userName: string;
   workouts: WorkoutEntry[];
-  onAdd: (day: DayOfWeek, workoutType: string, duration: number) => void;
+  onAdd: (day: DayOfWeek, workoutType: string, duration: number, distanceKm: number) => void;
   onDelete: (day: DayOfWeek) => void;
   completedDays: number;
   penalty: number;
@@ -48,9 +48,9 @@ export default function WeeklyTracker({
     return workouts.find((w) => w.day_of_week === day);
   };
 
-  const handleSaveWorkout = (workoutType: string, duration: number) => {
+  const handleSaveWorkout = (workoutType: string, duration: number, distanceKm: number) => {
     if (selectedDay) {
-      onAdd(selectedDay, workoutType, duration);
+      onAdd(selectedDay, workoutType, duration, distanceKm);
     }
   };
 
@@ -91,7 +91,7 @@ export default function WeeklyTracker({
                           {workout.workout_type}
                         </span>
                         <span className="text-xs text-green-600">
-                          {workout.duration}m
+                          {workout.duration}m{workout.distance_km ? ` ${workout.distance_km}km` : ''}
                         </span>
                       </div>
                       {canEdit && (
@@ -147,6 +147,7 @@ export default function WeeklyTracker({
           onClose={() => setSelectedDay(null)}
           existingType={getWorkoutForDay(selectedDay)?.workout_type}
           existingDuration={getWorkoutForDay(selectedDay)?.duration}
+          existingDistance={getWorkoutForDay(selectedDay)?.distance_km}
         />
       )}
     </>

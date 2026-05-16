@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initDb, sql } from '@/lib/db';
+import { supabase } from '@/lib/db';
 import { getWeekStart } from '@/lib/workout-utils';
-import { WorkoutEntry } from '@/lib/types';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -9,26 +8,21 @@ export async function GET(request: NextRequest) {
   const weekStart = searchParams.get('weekStart') || getWeekStart();
 
   try {
-    await initDb();
+    let query = supabase
+      .from('workout_entries')
+      .select('id, user_id, week_start, day_of_week, workout_type, duration, distance_km')
+      .eq('week_start', weekStart)
+      .order('day_of_week');
+
     if (userId) {
-      const workouts = await sql`
-        SELECT id, user_id, week_start, day_of_week, workout_type, duration
-        FROM workout_entries
-        WHERE user_id = ${parseInt(userId)} AND week_start = ${weekStart}
-        ORDER BY day_of_week
-      ` as WorkoutEntry[];
-
-      return NextResponse.json(workouts);
+      query = query.eq('user_id', parseInt(userId));
     } else {
-      const workouts = await sql`
-        SELECT id, user_id, week_start, day_of_week, workout_type, duration
-        FROM workout_entries
-        WHERE week_start = ${weekStart}
-        ORDER BY user_id, day_of_week
-      ` as WorkoutEntry[];
-
-      return NextResponse.json(workouts);
+      query = query.order('user_id');
     }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching workouts:', error);
     return NextResponse.json({ error: 'Failed to fetch workouts' }, { status: 500 });
@@ -37,27 +31,37 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await initDb();
     const body = await request.json();
-    const { userId, dayOfWeek, workoutType, duration, weekStart } = body;
+    const { userId, dayOfWeek, workoutType, duration, weekStart, distanceKm } = body;
 
     const week = weekStart || getWeekStart();
+    const distance = distanceKm || 0;
 
-    await sql`
-      INSERT INTO workout_entries (user_id, week_start, day_of_week, workout_type, duration)
-      VALUES (${userId}, ${week}, ${dayOfWeek}, ${workoutType}, ${duration})
-      ON CONFLICT (user_id, week_start, day_of_week)
-      DO UPDATE SET workout_type = EXCLUDED.workout_type, duration = EXCLUDED.duration
-    `;
+    const { error: upsertError } = await supabase
+      .from('workout_entries')
+      .upsert(
+        {
+          user_id: userId,
+          week_start: week,
+          day_of_week: dayOfWeek,
+          workout_type: workoutType,
+          duration,
+          distance_km: distance,
+        },
+        { onConflict: 'user_id,week_start,day_of_week' }
+      );
 
-    const workouts = await sql`
-      SELECT id, user_id, week_start, day_of_week, workout_type, duration
-      FROM workout_entries
-      WHERE user_id = ${userId} AND week_start = ${week}
-      ORDER BY day_of_week
-    ` as WorkoutEntry[];
+    if (upsertError) throw upsertError;
 
-    return NextResponse.json(workouts);
+    const { data, error } = await supabase
+      .from('workout_entries')
+      .select('id, user_id, week_start, day_of_week, workout_type, duration, distance_km')
+      .eq('user_id', userId)
+      .eq('week_start', week)
+      .order('day_of_week');
+
+    if (error) throw error;
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error updating workout:', error);
     return NextResponse.json({ error: 'Failed to update workout' }, { status: 500 });
@@ -66,7 +70,6 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    await initDb();
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     const dayOfWeek = searchParams.get('dayOfWeek');
@@ -76,19 +79,24 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    await sql`
-      DELETE FROM workout_entries
-      WHERE user_id = ${parseInt(userId)} AND week_start = ${weekStart} AND day_of_week = ${dayOfWeek}
-    `;
+    const { error: deleteError } = await supabase
+      .from('workout_entries')
+      .delete()
+      .eq('user_id', parseInt(userId))
+      .eq('week_start', weekStart)
+      .eq('day_of_week', dayOfWeek);
 
-    const workouts = await sql`
-      SELECT id, user_id, week_start, day_of_week, workout_type, duration
-      FROM workout_entries
-      WHERE user_id = ${parseInt(userId)} AND week_start = ${weekStart}
-      ORDER BY day_of_week
-    ` as WorkoutEntry[];
+    if (deleteError) throw deleteError;
 
-    return NextResponse.json(workouts);
+    const { data, error } = await supabase
+      .from('workout_entries')
+      .select('id, user_id, week_start, day_of_week, workout_type, duration, distance_km')
+      .eq('user_id', parseInt(userId))
+      .eq('week_start', weekStart)
+      .order('day_of_week');
+
+    if (error) throw error;
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error deleting workout:', error);
     return NextResponse.json({ error: 'Failed to delete workout' }, { status: 500 });

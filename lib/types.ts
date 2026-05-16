@@ -10,6 +10,7 @@ export interface WorkoutEntry {
   day_of_week: DayOfWeek;
   workout_type: WorkoutType;
   duration: number;
+  distance_km?: number;
 }
 
 export interface WeekStats {

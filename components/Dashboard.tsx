@@ -38,7 +38,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleAddWorkout = async (userId: number, day: DayOfWeek, workoutType: string, duration: number) => {
+  const handleAddWorkout = async (userId: number, day: DayOfWeek, workoutType: string, duration: number, distanceKm?: number) => {
     try {
       const response = await fetch('/api/workouts', {
         method: 'POST',
@@ -49,6 +49,7 @@ export default function Dashboard() {
           workoutType,
           duration,
           weekStart: currentWeekStart,
+          distanceKm: distanceKm || 0,
         }),
       });
 

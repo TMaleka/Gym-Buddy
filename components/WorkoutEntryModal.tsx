@@ -8,10 +8,11 @@ import { WORKOUT_TYPES, WorkoutType, DayOfWeek } from '@/lib/types';
 
 interface WorkoutEntryModalProps {
   day: DayOfWeek;
-  onSave: (workoutType: WorkoutType, duration: number) => void;
+  onSave: (workoutType: WorkoutType, duration: number, distanceKm: number) => void;
   onClose: () => void;
   existingType?: WorkoutType;
   existingDuration?: number;
+  existingDistance?: number;
 }
 
 export default function WorkoutEntryModal({
@@ -20,13 +21,17 @@ export default function WorkoutEntryModal({
   onClose,
   existingType,
   existingDuration,
+  existingDistance,
 }: WorkoutEntryModalProps) {
   const [workoutType, setWorkoutType] = useState<WorkoutType>(existingType || 'Gym');
   const [duration, setDuration] = useState(existingDuration || 30);
+  const [distanceKm, setDistanceKm] = useState(existingDistance || 0);
+
+  const isRunType = workoutType === 'Run' || workoutType === 'Walk';
 
   const handleSave = () => {
     if (duration > 0) {
-      onSave(workoutType, duration);
+      onSave(workoutType, duration, isRunType ? distanceKm : 0);
       onClose();
     }
   };
@@ -86,6 +91,24 @@ export default function WorkoutEntryModal({
               <span>180 min</span>
             </div>
           </div>
+
+          {isRunType && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Distance (km): {distanceKm}
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                step="0.5"
+                value={distanceKm}
+                onChange={(e) => setDistanceKm(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Enter distance in km"
+              />
+            </div>
+          )}
 
           <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1">
