@@ -51,10 +51,10 @@ function getWeekStatus(
 
 function StatusBadge({ status }: { status: WeekStatus }) {
   const labels: Record<WeekStatus, string> = {
-    completed: 'Completed',
+    completed: 'Crushed It',
     'on-track': 'On Track',
-    behind: 'Behind',
-    'falling-off': 'Falling Off',
+    behind: 'Almost There',
+    'falling-off': 'Needs a Push',
     future: 'Upcoming',
   };
   const colors: Record<WeekStatus, string> = {
