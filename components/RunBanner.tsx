@@ -4,11 +4,11 @@ export default function RunBanner() {
 
   return (
     <div className="w-full overflow-hidden bg-[#5B7FFF] py-2 select-none" aria-hidden="true">
-      <div className="animate-marquee-reverse whitespace-nowrap flex">
+      <div className="animate-marquee-reverse whitespace-nowrap">
         <span className="run-text">{runText}</span>
         <span className="run-text">{runText}</span>
       </div>
-      <div className="animate-marquee whitespace-nowrap flex mt-0.5">
+      <div className="animate-marquee whitespace-nowrap mt-0.5">
         <span className="run-subtext">{subText}</span>
         <span className="run-subtext">{subText}</span>
       </div>
