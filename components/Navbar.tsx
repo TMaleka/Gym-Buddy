@@ -8,7 +8,6 @@ import { Flame } from 'lucide-react';
 const NAV_LINKS = [
   { href: '/', label: 'This Week' },
   { href: '/marathon', label: 'Full Plan' },
-  { href: '/summary', label: 'Summary' },
 ];
 
 export default function Navbar() {
