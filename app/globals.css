@@ -97,6 +97,16 @@
   animation: marquee-reverse 35s linear infinite;
 }
 
+@keyframes fill-bar {
+  from {
+    width: 0%;
+  }
+}
+
+.animate-fill {
+  animation: fill-bar 1s ease-out;
+}
+
 .run-subtext {
   font-style: italic;
   font-weight: 600;

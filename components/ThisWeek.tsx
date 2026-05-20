@@ -188,8 +188,43 @@ export default function ThisWeek() {
   const plannedDays = new Set(week.runs.map((r) => r.day));
   const isActive = weekStatus === 'current';
 
+  const currentUser = users.find((u) => u.id === currentUserId);
+  const currentUserWorkouts = workouts.filter((w) => w.user_id === currentUserId);
+  const currentUserKm = Math.round(currentUserWorkouts.reduce((sum, w) => sum + (w.distance_km || 0), 0) * 10) / 10;
+  const currentUserRuns = currentUserWorkouts.length;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
   return (
     <div className="space-y-6">
+      {/* Hero section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1e293b] to-[#334155] p-6 sm:p-8 text-white">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#5B7FFF]/20 rounded-full -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#5B7FFF]/10 rounded-full translate-y-1/2 -translate-x-1/3" />
+        <div className="relative z-10">
+          <p className="text-sm text-gray-400 font-medium">{greeting}</p>
+          <h1 className="text-2xl sm:text-3xl font-black mt-1">
+            {currentUser?.name || 'Runner'}!
+          </h1>
+          <div className="flex flex-wrap gap-6 mt-4">
+            <div>
+              <div className="text-3xl font-black text-[#5B7FFF]">{currentUserKm}<span className="text-lg ml-1">km</span></div>
+              <p className="text-xs text-gray-400 mt-0.5">logged this week</p>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-[#5B7FFF]">{currentUserRuns}</div>
+              <p className="text-xs text-gray-400 mt-0.5">{currentUserRuns === 1 ? 'run' : 'runs'} completed</p>
+            </div>
+            {week && (
+              <div>
+                <div className="text-3xl font-black text-[#5B7FFF]">{week.targetKm}<span className="text-lg ml-1">km</span></div>
+                <p className="text-xs text-gray-400 mt-0.5">weekly target</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Countdown banner when plan hasn't started */}
       {weekStatus === 'upcoming' && (
         <Card className="border-2 border-yellow-400 bg-yellow-50">
@@ -345,7 +380,7 @@ export default function ThisWeek() {
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
                     className={cn(
-                      'h-3 rounded-full transition-all',
+                      'h-3 rounded-full transition-all animate-fill',
                       !isActive && 'bg-blue-400',
                       isActive && status === 'on-track' && 'bg-green-500',
                       isActive && status === 'behind' && 'bg-yellow-500',

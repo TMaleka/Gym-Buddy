@@ -116,7 +116,7 @@ function ProgressBar({ actual, target, status }: { actual: number; target: numbe
         <span className="text-muted-foreground">/ {target} km</span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
-        <div className={cn('h-2 rounded-full transition-all', barColor[status])} style={{ width: `${pct}%` }} />
+        <div className={cn('h-2 rounded-full transition-all animate-fill', barColor[status])} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
