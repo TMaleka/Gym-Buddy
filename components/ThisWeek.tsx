@@ -8,9 +8,6 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   Target,
-  TrendingDown,
-  AlertTriangle,
-  CheckCircle,
   Trophy,
   Calendar,
   Plus,
@@ -31,29 +28,13 @@ function getProgressStatus(actualKm: number, targetKm: number): ProgressStatus {
   return 'falling-off';
 }
 
-function StatusBanner({ status, userName }: { status: ProgressStatus; userName: string }) {
-  if (status === 'on-track') {
-    return (
-      <div className="flex items-center gap-2 bg-green-50 border border-green-300 rounded-lg px-4 py-2">
-        <CheckCircle className="h-5 w-5 text-green-600" />
-        <span className="font-semibold text-green-800">{userName} is crushing it!</span>
-      </div>
-    );
-  }
-  if (status === 'behind') {
-    return (
-      <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-300 rounded-lg px-4 py-2">
-        <AlertTriangle className="h-5 w-5 text-yellow-600" />
-        <span className="font-semibold text-yellow-800">{userName}, you&apos;ve got this — time to lace up!</span>
-      </div>
-    );
-  }
-  return (
-    <div className="flex items-center gap-2 bg-red-50 border border-red-300 rounded-lg px-4 py-2">
-      <TrendingDown className="h-5 w-5 text-red-600" />
-      <span className="font-semibold text-red-800">{userName}, let&apos;s get back on track — every km counts!</span>
-    </div>
-  );
+function StatusDot({ status }: { status: ProgressStatus }) {
+  const color = status === 'on-track'
+    ? 'bg-green-500'
+    : status === 'behind'
+      ? 'bg-orange-500'
+      : 'bg-red-500';
+  return <span className={`inline-block h-3 w-3 rounded-full ${color}`} />;
 }
 
 export default function ThisWeek() {
@@ -210,7 +191,7 @@ export default function ThisWeek() {
                 {/* Name and status */}
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-black">{user.name}</h2>
-                  {isActive && <StatusBanner status={status} userName={user.name} />}
+                  {isActive && <StatusDot status={status} />}
                 </div>
 
                 {/* Stats row */}
