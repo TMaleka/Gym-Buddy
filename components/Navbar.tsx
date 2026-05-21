@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 import { Flame } from 'lucide-react';
 
 const NAV_LINKS = [
-  { href: '/', label: 'This Week' },
-  { href: '/marathon', label: 'Full Plan' },
+  { href: '/', label: 'Week' },
+  { href: '/marathon', label: 'Plan' },
 ];
 
 export default function Navbar() {
@@ -22,7 +22,7 @@ export default function Navbar() {
               <Flame className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-black text-white tracking-tight">
-              ROAD TO 42
+              TOP RUNNER
             </span>
           </Link>
           <div className="flex items-center gap-1">
