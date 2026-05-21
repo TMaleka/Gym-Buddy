@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Flame } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 const NAV_LINKS = [
   { href: '/', label: 'Week' },
@@ -19,7 +19,7 @@ export default function Navbar() {
         <div className="flex justify-between h-16">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="bg-[#5B7FFF] rounded-lg p-1.5 group-hover:scale-110 transition-transform">
-              <Flame className="h-6 w-6 text-white" />
+              <Zap className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-black text-white tracking-tight">
               TOP RUNNER
