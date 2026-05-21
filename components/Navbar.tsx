@@ -22,7 +22,7 @@ export default function Navbar() {
               <Flame className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-black text-white tracking-tight">
-              GYM BUDDY
+              RUN 42
             </span>
           </Link>
           <div className="flex items-center gap-1">
