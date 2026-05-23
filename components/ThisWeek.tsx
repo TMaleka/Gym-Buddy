@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User, WorkoutEntry, DayOfWeek, DAYS } from '@/lib/types';
-import { getUpcomingOrCurrentWeek, MarathonWeek, MARATHON_DATE, PLAN_START } from '@/lib/marathon-plan';
+import { getUpcomingOrCurrentWeek, MarathonWeek, MarathonRun, MARATHON_DATE, PLAN_START } from '@/lib/marathon-plan';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
@@ -11,6 +11,7 @@ import {
   Trophy,
   Calendar,
   Plus,
+  X,
 } from 'lucide-react';
 
 type ProgressStatus = 'on-track' | 'behind' | 'falling-off';
@@ -26,6 +27,34 @@ function getProgressStatus(actualKm: number, targetKm: number): ProgressStatus {
   if (pct >= expectedPct * 0.8) return 'on-track';
   if (pct >= expectedPct * 0.5) return 'behind';
   return 'falling-off';
+}
+
+function getCoachingAdvice(
+  actualKm: number,
+  targetKm: number,
+  userWorkouts: WorkoutEntry[],
+  plannedRuns: MarathonRun[]
+): string {
+  const now = new Date();
+  const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0=Mon, 6=Sun
+  const loggedDays = new Set(userWorkouts.map((w) => w.day_of_week));
+  const remainingRuns = plannedRuns.filter((r) => {
+    const runIndex = DAYS.indexOf(r.day);
+    return runIndex >= todayIndex && !loggedDays.has(r.day);
+  });
+  const kmLeft = Math.round((targetKm - actualKm) * 10) / 10;
+
+  if (kmLeft <= 0) {
+    return 'Target reached — every extra km is a bonus!';
+  }
+  if (remainingRuns.length === 0) {
+    return `${kmLeft} km left — squeeze in a run before the week ends!`;
+  }
+  const perRun = Math.round((kmLeft / remainingRuns.length) * 10) / 10;
+  if (remainingRuns.length === 1) {
+    return `${kmLeft} km left — 1 run to go, aim for ${perRun} km.`;
+  }
+  return `${kmLeft} km left — ${remainingRuns.length} runs remaining, ~${perRun} km each.`;
 }
 
 function StatusDot({ status }: { status: ProgressStatus }) {
@@ -44,6 +73,7 @@ export default function ThisWeek() {
   const [logDay, setLogDay] = useState<DayOfWeek | null>(null);
   const [logKm, setLogKm] = useState('');
   const [logForUser, setLogForUser] = useState<number | null>(null);
+  const [dismissedAdvice, setDismissedAdvice] = useState<Set<number>>(new Set());
 
   const result = getUpcomingOrCurrentWeek();
   const week: MarathonWeek | null = result?.week || null;
@@ -226,6 +256,21 @@ export default function ThisWeek() {
                   </div>
                   <p className="text-xs text-gray-400 mt-1">{pct}% of weekly target</p>
                 </div>
+
+                {/* Coaching advice bubble */}
+                {isActive && !dismissedAdvice.has(user.id) && (
+                  <div className="flex items-start gap-2 bg-white/10 backdrop-blur rounded-lg px-3 py-2">
+                    <p className="text-xs text-gray-300 flex-1">
+                      {getCoachingAdvice(actualKm, week.targetKm, userWorkouts, week.runs)}
+                    </p>
+                    <button
+                      onClick={() => setDismissedAdvice((prev) => new Set(prev).add(user.id))}
+                      className="text-gray-400 hover:text-white shrink-0 mt-0.5"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* + Log Run button */}
                 {!isLogging && (
