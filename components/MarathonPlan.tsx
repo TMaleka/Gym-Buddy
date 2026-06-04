@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User, WorkoutEntry, DayOfWeek, DAYS } from '@/lib/types';
-import { MarathonWeek, MARATHON_DATE, getCurrentWeekNumber } from '@/lib/marathon-plan';
+import { MarathonWeek, MarathonRun, MARATHON_DATE, getCurrentWeekNumber } from '@/lib/marathon-plan';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Target, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, Trophy } from 'lucide-react';
@@ -26,6 +26,7 @@ function getWeekStatus(
   actualKm: number,
   targetKm: number,
   weekStart: string,
+  plannedRuns: MarathonRun[],
 ): WeekStatus {
   const now = new Date();
   const weekStartDate = new Date(weekStart + 'T00:00:00');
@@ -39,13 +40,17 @@ function getWeekStatus(
     if (pct >= 0.7) return 'behind';
     return 'falling-off';
   }
-  const dayOfWeek = now.getDay();
-  const daysIntoWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
-  const expectedPct = daysIntoWeek / 7;
-  const actualPct = targetKm > 0 ? actualKm / targetKm : 1;
+  // Current week: compare against planned km due up to today
+  const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const expectedKm = plannedRuns
+    .filter((r) => DAYS.indexOf(r.day) <= todayIndex)
+    .reduce((sum, r) => sum + r.distanceKm, 0);
 
-  if (actualPct >= expectedPct * 0.8) return 'on-track';
-  if (actualPct >= expectedPct * 0.5) return 'behind';
+  if (expectedKm === 0) return 'on-track';
+  const pct = actualKm / expectedKm;
+
+  if (pct >= 0.8) return 'on-track';
+  if (pct >= 0.5) return 'behind';
   return 'falling-off';
 }
 
@@ -251,8 +256,8 @@ export default function MarathonPlan() {
             const weekDate = new Date(week.weekStart + 'T00:00:00');
             const weekLabel = format(weekDate, 'MMM d');
 
-            const user1Status = getWeekStatus(week.user1.actualKm, week.targetKm, week.weekStart);
-            const user2Status = getWeekStatus(week.user2.actualKm, week.targetKm, week.weekStart);
+            const user1Status = getWeekStatus(week.user1.actualKm, week.targetKm, week.weekStart, week.runs);
+            const user2Status = getWeekStatus(week.user2.actualKm, week.targetKm, week.weekStart, week.runs);
 
             return (
               <Card

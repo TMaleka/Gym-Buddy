@@ -16,16 +16,19 @@ import {
 
 type ProgressStatus = 'on-track' | 'behind' | 'falling-off';
 
-function getProgressStatus(actualKm: number, targetKm: number): ProgressStatus {
-  if (targetKm === 0) return 'on-track';
-  const pct = actualKm / targetKm;
+function getProgressStatus(actualKm: number, plannedRuns: MarathonRun[]): ProgressStatus {
   const now = new Date();
-  const dayOfWeek = now.getDay();
-  const daysIntoWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
-  const expectedPct = daysIntoWeek / 7;
+  const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1; // 0=Mon, 6=Sun
+  // Sum planned km for runs on or before today
+  const expectedKm = plannedRuns
+    .filter((r) => DAYS.indexOf(r.day) <= todayIndex)
+    .reduce((sum, r) => sum + r.distanceKm, 0);
 
-  if (pct >= expectedPct * 0.8) return 'on-track';
-  if (pct >= expectedPct * 0.5) return 'behind';
+  if (expectedKm === 0) return 'on-track';
+  const pct = actualKm / expectedKm;
+
+  if (pct >= 0.8) return 'on-track';
+  if (pct >= 0.5) return 'behind';
   return 'falling-off';
 }
 
@@ -208,7 +211,7 @@ export default function ThisWeek() {
             ? Math.min(100, Math.round((actualKm / week.targetKm) * 100))
             : 0;
           const runs = userWorkouts.length;
-          const status = getProgressStatus(actualKm, week.targetKm);
+          const status = getProgressStatus(actualKm, week.runs);
           const isLogging = logForUser === user.id;
 
           return (

@@ -20,10 +20,10 @@ export async function GET() {
 
     const progress = MARATHON_PLAN.map((week) => {
       const user1Workouts = (workouts || []).filter(
-        (w) => w.user_id === 1 && w.week_start === week.weekStart
+        (w) => w.user_id === 1 && String(w.week_start).slice(0, 10) === week.weekStart
       );
       const user2Workouts = (workouts || []).filter(
-        (w) => w.user_id === 2 && w.week_start === week.weekStart
+        (w) => w.user_id === 2 && String(w.week_start).slice(0, 10) === week.weekStart
       );
 
       const user1Km = user1Workouts.reduce((sum, w) => sum + (Number(w.distance_km) || 0), 0);
