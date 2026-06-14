@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User, WorkoutEntry, DayOfWeek, DAYS } from '@/lib/types';
-import { getUpcomingOrCurrentWeek, MarathonWeek, MarathonRun, MARATHON_DATE, PLAN_START } from '@/lib/marathon-plan';
+import { getUpcomingOrCurrentWeek, MarathonWeek, MarathonRun, MARATHON_PLAN, MARATHON_DATE, PLAN_START } from '@/lib/marathon-plan';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
@@ -77,6 +77,7 @@ export default function ThisWeek() {
   const [logKm, setLogKm] = useState('');
   const [logForUser, setLogForUser] = useState<number | null>(null);
   const [dismissedAdvice, setDismissedAdvice] = useState<Set<number>>(new Set());
+  const [cumulativeData, setCumulativeData] = useState<{ user1Km: number; user2Km: number } | null>(null);
 
   const result = getUpcomingOrCurrentWeek();
   const week: MarathonWeek | null = result?.week || null;
@@ -89,14 +90,21 @@ export default function ThisWeek() {
 
   const fetchData = async () => {
     try {
-      const [usersRes, workoutsRes] = await Promise.all([
+      const [usersRes, workoutsRes, marathonRes] = await Promise.all([
         fetch('/api/users'),
         fetch(`/api/workouts?weekStart=${weekStart}`),
+        fetch('/api/marathon'),
       ]);
       const usersData = await usersRes.json();
       const workoutsData = await workoutsRes.json();
+      const marathonData = await marathonRes.json();
       setUsers(usersData);
       setWorkouts(workoutsData);
+      if (Array.isArray(marathonData)) {
+        const user1Km = marathonData.reduce((sum: number, w: any) => sum + (w.user1?.actualKm || 0), 0);
+        const user2Km = marathonData.reduce((sum: number, w: any) => sum + (w.user2?.actualKm || 0), 0);
+        setCumulativeData({ user1Km, user2Km });
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -339,6 +347,81 @@ export default function ThisWeek() {
           );
         })}
       </div>
+
+      {/* Cumulative progress tracker */}
+      {isActive && cumulativeData && users.length > 0 && (() => {
+        const now = new Date();
+        const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1;
+        // Expected km = full targets for completed weeks + planned runs due today in current week
+        const expectedKm = MARATHON_PLAN.reduce((sum, w) => {
+          const wStart = new Date(w.weekStart + 'T00:00:00');
+          const wEnd = new Date(wStart);
+          wEnd.setDate(wEnd.getDate() + 7);
+          if (now >= wEnd) return sum + w.targetKm; // completed week
+          if (now >= wStart && now < wEnd) {
+            // current week: add planned runs due up to today
+            return sum + w.runs
+              .filter((r) => DAYS.indexOf(r.day) <= todayIndex)
+              .reduce((s, r) => s + r.distanceKm, 0);
+          }
+          return sum; // future week
+        }, 0);
+
+        const roundedExpected = Math.round(expectedKm * 10) / 10;
+
+        return (
+          <div className="rounded-xl border bg-white p-4 space-y-3">
+            <h3 className="text-sm font-bold text-gray-700">Overall Progress</h3>
+            {users.map((user) => {
+              const actualKm = user.id === 1 ? cumulativeData.user1Km : cumulativeData.user2Km;
+              const rounded = Math.round(actualKm * 10) / 10;
+              const diff = Math.round((actualKm - expectedKm) * 10) / 10;
+              const pct = roundedExpected > 0 ? Math.round((actualKm / roundedExpected) * 100) : 100;
+              const isAhead = diff >= 0;
+              const barPct = Math.min(100, pct);
+
+              // Catch-up tip
+              let tip = '';
+              if (!isAhead && week) {
+                const kmBehind = Math.abs(diff);
+                const remainingRuns = week.runs.filter((r) => DAYS.indexOf(r.day) > todayIndex);
+                if (remainingRuns.length > 0) {
+                  const extraPerRun = Math.round((kmBehind / remainingRuns.length) * 10) / 10;
+                  tip = `Add ~${extraPerRun} km to your next ${remainingRuns.length} run${remainingRuns.length > 1 ? 's' : ''} to close the gap.`;
+                } else {
+                  tip = `${kmBehind} km to make up next week.`;
+                }
+              }
+
+              return (
+                <div key={user.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-800">{user.name}</span>
+                    <span className="text-gray-500">
+                      {rounded} / {roundedExpected} km expected
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div
+                      className={cn(
+                        'h-2 rounded-full transition-all animate-fill',
+                        isAhead ? 'bg-green-500' : pct >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                      )}
+                      style={{ width: `${barPct}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className={isAhead ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                      {isAhead ? `${diff} km ahead` : `${Math.abs(diff)} km behind`}
+                    </span>
+                    {tip && <span className="text-gray-500 italic">{tip}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Countdown banner when plan hasn't started */}
       {weekStatus === 'upcoming' && (
